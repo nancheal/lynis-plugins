@@ -1,0 +1,95 @@
+#!/bin/sh
+
+# -------------------------- CUT THIS SECTION ---------------------------
+#  This is a template to create a customized plugin
+#
+#  Each plugin should at least have several variables defined with the
+#  prefix PLUGIN_* (see below)
+#
+#  If you want to learn what functions you can use, check include/functions
+#
+# -------------------------- CUT THIS SECTION ---------------------------
+
+#########################################################################
+#
+#    * DO NOT REMOVE *
+#-----------------------------------------------------
+# PLUGIN_AUTHOR=___nancheal_nancheal@gmail.com___
+# PLUGIN_CATEGORY=PASS
+# PLUGIN_DESC=A test for check if there is password hashes stored in /etc/passwd
+# PLUGIN_NAME=tests_passwd
+# PLUGIN_REQUIRED_TESTS=
+#-----------------------------------------------------
+#
+#########################################################################
+check_password_hashes() {
+    IFS=$'\n'
+    passwd_content=$(${AWKBINARY} '{print $0}' /etc/passwd)
+    LogText "Test:obtain /etc/passwd file content"
+    for each_passwd in ${passwd_content};
+    do
+        IFS=':'
+        arr=($each_passwd)
+        if [ "${arr[1]}" != "x" ];then
+            IFS=$'\n'
+            Report "sensetive_passwd_hashes[]=$each_passwd"
+        fi
+    done
+}
+#########################################################################
+#
+    # Add custom section to screen output
+    InsertSection "PASS"
+#
+#################################################################################
+#
+    # Test        : PASS-0001
+    # Description : We show some lines on the screen
+
+    # Register our first custom test
+    # We consider it to be a lightweight test (no heavy IO, or long searches), no network connection needed
+    Register --test-no PASS-0001 --weight L --network NO --description "A test for check if there is password hashess stored in /etc/passwd"
+    if [ ${SKIPTEST} -eq 0 ]; then
+        # The Display function makes it easy to show something on screen, with colors.
+        # --indent  defines amount of spaces
+        # --text    text to be displayed on screen
+        # --result  text at end of line
+        # --color   color of result text
+        Display --indent 2 --text "- Checking if there is a password hashes on /etc/passwd file" --result OK --color GREEN
+        check_password_hashes;
+    fi
+#
+#################################################################################
+#
+
+    # First check if OPENSSLBINARY is known as a prerequisite for this test.
+    if [ ! -z "${OPENSSLBINARY}" ]; then PREQS_MET="YES"; else PREQS_MET="NO"; fi
+    Register --test-no CUST-0001 --preqs-met ${PREQS_MET} --weight M --network NO --description "Description of custom test"
+    if [ ${SKIPTEST} -eq 0 ]; then
+        FOUNDPROBLEM=0
+        DIR="/my/path"
+        LogText "Test: we are going to check if we can find a particular directory (${DIR})"
+        # Check if a directory exists
+        if [ -d ${DIR} ]; then
+            LogText "Result: log entry for easier debugging or additional information"
+        else
+            FOUNDPROBLEM=1
+            LogText "Result: directory ${DIR} was not found!"
+            ReportWarning "${TEST_NO}" "This is a test warning line" "${DIR}" "text:Create directory ${DIR}"
+        fi
+
+        if [ ${FOUNDPROBLEM} -eq 0 ]; then
+            Display --indent 2 --text "- Checking if everything is OK..." --result OK --color GREEN
+        else
+            Display --indent 2 --text "- Checking if everything is OK..." --result WARNING --color RED
+            ReportSuggestion ${TEST_NO} "This is a suggestion"
+        fi
+    fi
+#
+#################################################################################
+#
+
+# Wait for keypress (unless --quick is being used)
+WaitForKeyPress
+
+#EOF

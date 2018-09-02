@@ -148,7 +148,7 @@ plugin=software
 plugin=system-integrity
 plugin=systemd
 plugin=users
-plugin=get_passwd
+plugin=tests_passwd
 
 #################################################################################
 #
