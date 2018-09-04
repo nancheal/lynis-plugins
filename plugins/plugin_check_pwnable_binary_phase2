@@ -15,48 +15,74 @@
 #    * DO NOT REMOVE *
 #-----------------------------------------------------
 # PLUGIN_AUTHOR=___nancheal_nancheal@gmail.com___
-# PLUGIN_CATEGORY=PASS
-# PLUGIN_DESC=A test for check if there is password hashes stored in /etc/passwd
-# PLUGIN_NAME=tests_passwd
+# PLUGIN_CATEGORY=PWN
+# PLUGIN_DESC=A test for check if current user can run a pwnable programs
+# PLUGIN_NAME=check_pwnable_binary
 # PLUGIN_REQUIRED_TESTS=
 #-----------------------------------------------------
 #
 #########################################################################
-check_password_hashes() {
-    IFS=$'\n'
-    passwd_content=$(${AWKBINARY} '{print $0}' /etc/passwd)
-    LogText "Test:obtain /etc/passwd file content"
-    for each_passwd in ${passwd_content};
+pwnable_binary_filter(){
+    pwnable_list=(apt-get apt ash awk base64 bash busybox cat cpulimit crontab csh curl cut dash dd diff docker ed emacs env expand expect find flock fmt fold ftp gdb git head ionice jq ksh ld.so less ltrace lua mail make man more mount mysql nano nc nice nl nmap node od perl pg php pico puppet python2 python3 red rlwrap rpm rpmquery rsync ruby scp sed setarch sftp shuf smbclient socat sort sqlite3 ssh stdbuf strace tail tar taskset tclsh tcpdump tee telnet tftp "time" timeout ul unexpand uniq unshare vi vim watch wget whois wish xargs xxd zip zsh)
+    for each in ${pwnable_list[@]};
     do
-        IFS=':'
-        arr=($each_passwd)
-        if [ "${arr[1]}" != "x" ];then
-            IFS=$'\n'
-            Report "sensetive_passwd_hashes[]=$each_passwd"
-        fi
+      if [ "$1" == "$each" ];then
+          return "1"
+      fi
     done
 }
+
+split_string(){
+    IFS=$1
+    TO_SPLIT_STRING=$2
+    echo $TO_SPLIT_STRING
+}
+
+check_pwnable_binary() {
+    # define some constant
+    IFS_OLD=$IFS
+    SPLITCOMMA=', '
+    SPLITSLASH='/'
+    PWNABLE="0"
+    # start 
+    LogText "Test:obtain user available binary"
+    binary_available=$(sudo -l | sed -n '$p')
+    binary_split_comma=($(split_string "$SPLITCOMMA" "$binary_available"))
+    for binary_absolute_path in ${binary_split_comma[@]};
+    do
+        binary_split_slash=($(split_string "$SPLITSLASH" "$binary_absolute_path"))
+        binary_name=${binary_split_slash[${#binary_split_slash[@]}-1]}
+        pwnable_binary_filter $binary_name
+        PWNABLE=$?
+        if [ "$PWNABLE" == "1" ];then
+            IFS=$IFS_OLD
+            Report "pwnable_programs[]=$binary_absolute_path (For more details, visit:https://gtfobins.github.io/gtfobins/$binary_name)"
+        fi
+    done
+    IFS=$IFS_OLD
+}
+
 #########################################################################
 #
     # Add custom section to screen output
-    InsertSection "PASS"
+    InsertSection "PWN"
 #
 #################################################################################
 #
-    # Test        : PASS-0001
+    # Test        : PWN-0001
     # Description : We show some lines on the screen
 
     # Register our first custom test
     # We consider it to be a lightweight test (no heavy IO, or long searches), no network connection needed
-    Register --test-no PASS-0001 --weight L --network NO --description "A test for check if there is password hashess stored in /etc/passwd"
+    Register --test-no PWN-0001 --weight L --network NO --description "A test for check if pwnable programs is available for current user"
     if [ ${SKIPTEST} -eq 0 ]; then
         # The Display function makes it easy to show something on screen, with colors.
         # --indent  defines amount of spaces
         # --text    text to be displayed on screen
         # --result  text at end of line
         # --color   color of result text
-        Display --indent 2 --text "- Checking if there is a password hashes on /etc/passwd file" --result OK --color GREEN
-        check_password_hashes;
+        Display --indent 2 --text "- Checking if pwnable programs is available for current user" --result OK --color GREEN
+        check_pwnable_binary;
     fi
 #
 #################################################################################

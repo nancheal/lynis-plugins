@@ -148,7 +148,8 @@ plugin=software
 plugin=system-integrity
 plugin=systemd
 plugin=users
-plugin=tests_passwd
+plugin=check_hashes_passwd
+plugin=check_pwnable_binary
 
 #################################################################################
 #
