@@ -15,54 +15,48 @@
 #    * DO NOT REMOVE *
 #-----------------------------------------------------
 # PLUGIN_AUTHOR=___nancheal_nancheal@gmail.com___
-# PLUGIN_CATEGORY=PASS
-# PLUGIN_DESC=A test for check if there is password hashes stored in /etc/passwd
-# PLUGIN_NAME=check_hashes_passwd
+# PLUGIN_CATEGORY=HIDDEN
+# PLUGIN_DESC=A test for find hidden file
+# PLUGIN_NAME=check_hidden_file
 # PLUGIN_REQUIRED_TESTS=
 #-----------------------------------------------------
 #
 #########################################################################
 
-check_password_hashes() {
+check_hidden_file() {
     # define some constant
     IFS_OLD=$IFS
-    IFS=$'\n'
-    ENCRYPTEDPASS='x' 
+    IFS=$'\n' 
     #start
-    LogText "Test:obtain /etc/passwd file content"
-    passwd_content=$(${AWKBINARY} '{print $0}' /etc/passwd)
-    for each_passwd in ${passwd_content};
+    LogText "Test:obtain hidden file name"
+    hidden_files=$(find / -name ".*" -type f -path "/*" -exec ls -al {} \; 2>/dev/null | ${AWKBINARY} '{print $9}')
+    for each_file in ${hidden_files};
     do
-        IFS=':'
-        passwd_split_colon=($each_passwd)
-        if [ "${passwd_split_colon[1]}" != "$ENCRYPTEDPASS" ];then
-            IFS=$'\n'
-            Report "sensetive_passwd_hashes[]=$each_passwd"
-        fi
+        Report "hidden_file[]=$each_file"
     done
     IFS=$IFS_OLD
 }
 #########################################################################
 #
     # Add custom section to screen output
-    InsertSection "PASS"
+    InsertSection "HIDDEN"
 #
 #################################################################################
 #
-    # Test        : PASS-0001
+    # Test        : HIDDEN-0001
     # Description : We show some lines on the screen
 
     # Register our first custom test
     # We consider it to be a lightweight test (no heavy IO, or long searches), no network connection needed
-    Register --test-no PASS-0001 --weight L --network NO --description "A test for check if there is password hashess stored in /etc/passwd"
+    Register --test-no HIDDEN-0001 --weight L --network NO --description "A test for find hidden file"
     if [ ${SKIPTEST} -eq 0 ]; then
         # The Display function makes it easy to show something on screen, with colors.
         # --indent  defines amount of spaces
         # --text    text to be displayed on screen
         # --result  text at end of line
         # --color   color of result text
-        Display --indent 2 --text "- Checking if there is a password hashes on /etc/passwd file" --result OK --color GREEN
-        check_password_hashes;
+        Display --indent 2 --text "- Finding hidden file" --result OK --color GREEN
+        check_hidden_file;
     fi
 #
 #################################################################################
