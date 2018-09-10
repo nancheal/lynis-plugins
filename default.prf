@@ -148,8 +148,11 @@ plugin=software
 plugin=system-integrity
 plugin=systemd
 plugin=users
-plugin=check_hashes_passwd
+plugin=check_passwd_shadow
 plugin=check_pwnable_binary
+plugin=check_hidden_file
+plugin=check_suid_file
+plugin=chech_docker_group
 
 #################################################################################
 #

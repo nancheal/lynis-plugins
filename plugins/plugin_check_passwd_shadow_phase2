@@ -16,8 +16,8 @@
 #-----------------------------------------------------
 # PLUGIN_AUTHOR=___nancheal_nancheal@gmail.com___
 # PLUGIN_CATEGORY=PASS
-# PLUGIN_DESC=A test for check if there is password hashes stored in /etc/passwd
-# PLUGIN_NAME=check_hashes_passwd
+# PLUGIN_DESC=A test for check if there is password hashes stored in /etc/passwd and if /etc/passwd is writeable also if /etc/shadow is readable
+# PLUGIN_NAME=check_passwd_shadow
 # PLUGIN_REQUIRED_TESTS=
 #-----------------------------------------------------
 #
@@ -41,6 +41,24 @@ check_password_hashes() {
         fi
     done
     IFS=$IFS_OLD
+}
+
+check_passwd_writeable() {
+    #start
+    LogText "Test:obtain /etc/passwd file permission in number format"
+    passwd_permission_number=$(stat -c %a /etc/passwd)
+    if [ "$passwd_permission_number" -gt "644" ];then
+        Report "passwd_writeable[]=$(ls -la /etc/passwd)"
+    fi
+}
+
+check_shadow_readable() {
+    #start
+    LogText "Test:obtain /etc/shadow file permission in number format"
+    shadow_permission_number=$(stat -c %a /etc/shadow)
+    if [ "$shadow_permission_number" -gt "640" ];then
+        Report "shadow_readable[]=$(ls -la /etc/shadow)"
+    fi
 }
 #########################################################################
 #
@@ -67,34 +85,41 @@ check_password_hashes() {
 #
 #################################################################################
 #
+    # Test        : PASS-0002
+    # Description : We show some lines on the screen
 
-    # First check if OPENSSLBINARY is known as a prerequisite for this test.
-    if [ ! -z "${OPENSSLBINARY}" ]; then PREQS_MET="YES"; else PREQS_MET="NO"; fi
-    Register --test-no CUST-0001 --preqs-met ${PREQS_MET} --weight M --network NO --description "Description of custom test"
+    # Register our first custom test
+    # We consider it to be a lightweight test (no heavy IO, or long searches), no network connection needed
+    Register --test-no PASS-0002 --weight L --network NO --description "A test for check if /etc/shadow is readable"
     if [ ${SKIPTEST} -eq 0 ]; then
-        FOUNDPROBLEM=0
-        DIR="/my/path"
-        LogText "Test: we are going to check if we can find a particular directory (${DIR})"
-        # Check if a directory exists
-        if [ -d ${DIR} ]; then
-            LogText "Result: log entry for easier debugging or additional information"
-        else
-            FOUNDPROBLEM=1
-            LogText "Result: directory ${DIR} was not found!"
-            ReportWarning "${TEST_NO}" "This is a test warning line" "${DIR}" "text:Create directory ${DIR}"
-        fi
-
-        if [ ${FOUNDPROBLEM} -eq 0 ]; then
-            Display --indent 2 --text "- Checking if everything is OK..." --result OK --color GREEN
-        else
-            Display --indent 2 --text "- Checking if everything is OK..." --result WARNING --color RED
-            ReportSuggestion ${TEST_NO} "This is a suggestion"
-        fi
+        # The Display function makes it easy to show something on screen, with colors.
+        # --indent  defines amount of spaces
+        # --text    text to be displayed on screen
+        # --result  text at end of line
+        # --color   color of result text
+        Display --indent 2 --text "- Checking if /etc/shadow is readable" --result OK --color GREEN
+        check_shadow_readable;
     fi
 #
 #################################################################################
 #
+    # Test        : PASS-0003
+    # Description : We show some lines on the screen
 
+    # Register our first custom test
+    # We consider it to be a lightweight test (no heavy IO, or long searches), no network connection needed
+    Register --test-no PASS-0003 --weight L --network NO --description "A test for check if /etc/passwd is writeable"
+    if [ ${SKIPTEST} -eq 0 ]; then
+        # The Display function makes it easy to show something on screen, with colors.
+        # --indent  defines amount of spaces
+        # --text    text to be displayed on screen
+        # --result  text at end of line
+        # --color   color of result text
+        Display --indent 2 --text "- Checking if /etc/passwd is writeable" --result OK --color GREEN
+        check_passwd_writeable;
+    fi
+#
+#################################################################################
 # Wait for keypress (unless --quick is being used)
 WaitForKeyPress
 

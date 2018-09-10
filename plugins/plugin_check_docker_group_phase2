@@ -1,0 +1,99 @@
+#!/bin/sh
+
+# -------------------------- CUT THIS SECTION ---------------------------
+#  This is a template to create a customized plugin
+#
+#  Each plugin should at least have several variables defined with the
+#  prefix PLUGIN_* (see below)
+#
+#  If you want to learn what functions you can use, check include/functions
+#
+# -------------------------- CUT THIS SECTION ---------------------------
+
+#########################################################################
+#
+#    * DO NOT REMOVE *
+#-----------------------------------------------------
+# PLUGIN_AUTHOR=___nancheal_nancheal@gmail.com___
+# PLUGIN_CATEGORY=SUID
+# PLUGIN_DESC=A test for check if there is docker group user
+# PLUGIN_NAME=check_docker_group
+# PLUGIN_REQUIRED_TESTS=
+#-----------------------------------------------------
+#
+#########################################################################
+
+check_docker_group() {
+    # define some constant
+    IFS_OLD=$IFS
+    IFS=$'\n' 
+    #start
+    LogText "Test:obtain group info"
+    groups=$(${AWKBINARY} '{print $0}' /etc/group)
+    for each_group in ${groups};
+    do
+        IFS=':'
+        group_split_colon=($each_group)
+        if [ "${group_split_colon[0]}" == "docker" ];then
+            Report "docker_group[]=$each_group for more detail look at:https://fosterelli.co/privilege-escalation-via-docker.html && http://www.freebuf.com/articles/system/170783.html"
+        fi
+    done
+    IFS=$IFS_OLD
+}
+#########################################################################
+#
+    # Add custom section to screen output
+    InsertSection "GROUP"
+#
+#################################################################################
+#
+    # Test        : GROUP-0001
+    # Description : We show some lines on the screen
+
+    # Register our first custom test
+    # We consider it to be a lightweight test (no heavy IO, or long searches), no network connection needed
+    Register --test-no GROUP-0001 --weight L --network NO --description "A test for check if there is docker group user"
+    if [ ${SKIPTEST} -eq 0 ]; then
+        # The Display function makes it easy to show something on screen, with colors.
+        # --indent  defines amount of spaces
+        # --text    text to be displayed on screen
+        # --result  text at end of line
+        # --color   color of result text
+        Display --indent 2 --text "- checking docker group" --result OK --color GREEN
+        check_docker_group;
+    fi
+#
+#################################################################################
+#
+
+    # First check if OPENSSLBINARY is known as a prerequisite for this test.
+    if [ ! -z "${OPENSSLBINARY}" ]; then PREQS_MET="YES"; else PREQS_MET="NO"; fi
+    Register --test-no CUST-0001 --preqs-met ${PREQS_MET} --weight M --network NO --description "Description of custom test"
+    if [ ${SKIPTEST} -eq 0 ]; then
+        FOUNDPROBLEM=0
+        DIR="/my/path"
+        LogText "Test: we are going to check if we can find a particular directory (${DIR})"
+        # Check if a directory exists
+        if [ -d ${DIR} ]; then
+            LogText "Result: log entry for easier debugging or additional information"
+        else
+            FOUNDPROBLEM=1
+            LogText "Result: directory ${DIR} was not found!"
+            ReportWarning "${TEST_NO}" "This is a test warning line" "${DIR}" "text:Create directory ${DIR}"
+        fi
+
+        if [ ${FOUNDPROBLEM} -eq 0 ]; then
+            Display --indent 2 --text "- Checking if everything is OK..." --result OK --color GREEN
+        else
+            Display --indent 2 --text "- Checking if everything is OK..." --result WARNING --color RED
+            ReportSuggestion ${TEST_NO} "This is a suggestion"
+        fi
+    fi
+#
+#################################################################################
+#
+
+# Wait for keypress (unless --quick is being used)
+WaitForKeyPress
+
+#EOF
